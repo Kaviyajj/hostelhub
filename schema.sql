@@ -1,0 +1,213 @@
+-- HOSTELHUB: SMART HOSTEL MANAGEMENT SYSTEM
+-- MySQL Relational Database Schema & Sample Seeds
+
+CREATE DATABASE IF NOT EXISTS `hostelhub`;
+USE `hostelhub`;
+
+-- 1. Users Table
+CREATE TABLE IF NOT EXISTS `Users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `email` VARCHAR(255) NOT NULL UNIQUE,
+  `password` VARCHAR(255) NOT NULL,
+  `role` ENUM('admin', 'warden', 'student') NOT NULL,
+  `name` VARCHAR(255) NOT NULL,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 2. Blocks Table
+CREATE TABLE IF NOT EXISTS `Blocks` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(255) NOT NULL UNIQUE,
+  `floors` INT NOT NULL DEFAULT 1,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 3. Wardens Table
+CREATE TABLE IF NOT EXISTS `Wardens` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `userId` INT NOT NULL,
+  `phone` VARCHAR(255) NOT NULL,
+  `assignedBlockId` INT DEFAULT NULL,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `userId_unique` (`userId`),
+  CONSTRAINT `fk_warden_user` FOREIGN KEY (`userId`) REFERENCES `Users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_warden_block` FOREIGN KEY (`assignedBlockId`) REFERENCES `Blocks` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 4. Rooms Table
+CREATE TABLE IF NOT EXISTS `Rooms` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `roomNumber` VARCHAR(255) NOT NULL,
+  `blockId` INT NOT NULL,
+  `floor` INT NOT NULL,
+  `capacity` INT NOT NULL DEFAULT 4,
+  `occupancy` INT NOT NULL DEFAULT 0,
+  `status` ENUM('active', 'maintenance') NOT NULL DEFAULT 'active',
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `room_block_unique` (`roomNumber`, `blockId`),
+  CONSTRAINT `fk_room_block` FOREIGN KEY (`blockId`) REFERENCES `Blocks` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 5. Students Table
+CREATE TABLE IF NOT EXISTS `Students` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `userId` INT NOT NULL,
+  `registerNumber` VARCHAR(255) NOT NULL UNIQUE,
+  `gender` VARCHAR(255) NOT NULL,
+  `department` VARCHAR(255) NOT NULL,
+  `year` INT NOT NULL,
+  `phone` VARCHAR(255) NOT NULL,
+  `parentName` VARCHAR(255) NOT NULL,
+  `parentPhone` VARCHAR(255) NOT NULL,
+  `address` TEXT NOT NULL,
+  `photoUrl` VARCHAR(255) DEFAULT NULL,
+  `qrCodeData` TEXT DEFAULT NULL,
+  `admissionStatus` ENUM('pending', 'approved', 'rejected', 'waitlisted') NOT NULL DEFAULT 'pending',
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `userId_unique_student` (`userId`),
+  CONSTRAINT `fk_student_user` FOREIGN KEY (`userId`) REFERENCES `Users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 6. Room Allocations Table
+CREATE TABLE IF NOT EXISTS `RoomAllocations` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `studentId` INT NOT NULL,
+  `roomId` INT NOT NULL,
+  `allocationDate` DATE NOT NULL,
+  `vacateDate` DATE DEFAULT NULL,
+  `status` ENUM('active', 'vacated') NOT NULL DEFAULT 'active',
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_alloc_student` FOREIGN KEY (`studentId`) REFERENCES `Students` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_alloc_room` FOREIGN KEY (`roomId`) REFERENCES `Rooms` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 7. Attendances Table
+CREATE TABLE IF NOT EXISTS `Attendances` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `date` DATE NOT NULL,
+  `studentId` INT NOT NULL,
+  `status` ENUM('present', 'absent', 'leave') NOT NULL DEFAULT 'present',
+  `markedByWardenId` INT DEFAULT NULL,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `date_student_unique` (`date`, `studentId`),
+  CONSTRAINT `fk_attn_student` FOREIGN KEY (`studentId`) REFERENCES `Students` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_attn_warden` FOREIGN KEY (`markedByWardenId`) REFERENCES `Wardens` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 8. Complaints Table
+CREATE TABLE IF NOT EXISTS `Complaints` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `studentId` INT NOT NULL,
+  `type` ENUM('electrical', 'water', 'internet', 'furniture', 'cleaning', 'security', 'others') NOT NULL,
+  `description` TEXT NOT NULL,
+  `status` ENUM('pending', 'assigned', 'in_progress', 'resolved') NOT NULL DEFAULT 'pending',
+  `assignedStaff` VARCHAR(255) DEFAULT NULL,
+  `resolutionNotes` TEXT DEFAULT NULL,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_complaint_student` FOREIGN KEY (`studentId`) REFERENCES `Students` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 9. LeaveRequests Table
+CREATE TABLE IF NOT EXISTS `LeaveRequests` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `studentId` INT NOT NULL,
+  `startDate` DATE NOT NULL,
+  `endDate` DATE NOT NULL,
+  `reason` TEXT NOT NULL,
+  `status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  `approvedByWardenId` INT DEFAULT NULL,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_leave_student` FOREIGN KEY (`studentId`) REFERENCES `Students` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_leave_warden` FOREIGN KEY (`approvedByWardenId`) REFERENCES `Wardens` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 10. Visitors Table
+CREATE TABLE IF NOT EXISTS `Visitors` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `visitorName` VARCHAR(255) NOT NULL,
+  `relationship` VARCHAR(255) NOT NULL,
+  `mobileNumber` VARCHAR(255) NOT NULL,
+  `studentId` INT NOT NULL,
+  `entryTime` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `exitTime` DATETIME DEFAULT NULL,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_visitor_student` FOREIGN KEY (`studentId`) REFERENCES `Students` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 11. Fees Table
+CREATE TABLE IF NOT EXISTS `Fees` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `studentId` INT NOT NULL,
+  `academicYear` VARCHAR(255) NOT NULL,
+  `hostelFee` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `messFee` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `status` ENUM('pending', 'paid', 'partially_paid') NOT NULL DEFAULT 'pending',
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_fee_student` FOREIGN KEY (`studentId`) REFERENCES `Students` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 12. Payments Table
+CREATE TABLE IF NOT EXISTS `Payments` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `feeId` INT NOT NULL,
+  `amountPaid` DECIMAL(10,2) NOT NULL,
+  `paymentMethod` VARCHAR(255) NOT NULL,
+  `transactionId` VARCHAR(255) NOT NULL UNIQUE,
+  `receiptPdfUrl` VARCHAR(255) DEFAULT NULL,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_payment_fee` FOREIGN KEY (`feeId`) REFERENCES `Fees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 13. Notices Table
+CREATE TABLE IF NOT EXISTS `Notices` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `description` TEXT NOT NULL,
+  `category` ENUM('general', 'mess', 'sports', 'exam', 'maintenance') NOT NULL DEFAULT 'general',
+  `pdfUrl` VARCHAR(255) DEFAULT NULL,
+  `publishDate` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `authorId` INT NOT NULL,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_notice_author` FOREIGN KEY (`authorId`) REFERENCES `Users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 14. Notifications Table
+CREATE TABLE IF NOT EXISTS `Notifications` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `userId` INT NOT NULL,
+  `title` VARCHAR(255) NOT NULL,
+  `message` TEXT NOT NULL,
+  `isRead` TINYINT(1) NOT NULL DEFAULT 0,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_notification_user` FOREIGN KEY (`userId`) REFERENCES `Users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 15. ActivityLogs Table
+CREATE TABLE IF NOT EXISTS `ActivityLogs` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `userId` INT DEFAULT NULL,
+  `action` VARCHAR(255) NOT NULL,
+  `details` TEXT,
+  `createdAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_log_user` FOREIGN KEY (`userId`) REFERENCES `Users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --- SAMPLE DATA INSERTS ---
+INSERT INTO `Users` (`id`, `email`, `password`, `role`, `name`) VALUES
+(1, 'admin@hostelhub.com', '$2a$10$T1Kq09h32wS73V3eD/dI6eeo36mO1/3xR67Jp7iX37Z.2Wc6g2tC.', 'admin', 'Super Admin'); 
+-- password is 'adminpassword' (hashed with bcrypt)

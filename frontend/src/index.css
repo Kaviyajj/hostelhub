@@ -1,0 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 font-sans antialiased transition-colors duration-200;
+  }
+  
+  body.dark {
+    @apply bg-[#0F172A] text-slate-100;
+  }
+}
+
+@layer components {
+  /* Glassmorphism card styles */
+  .glass-card {
+    @apply bg-white border border-slate-100 shadow-sm rounded-2xl p-6 backdrop-blur-md;
+  }
+  
+  .dark .glass-card {
+    @apply bg-[#1E293B] border-slate-700/60 shadow-none;
+  }
+  
+  /* Input components */
+  .form-input {
+    @apply w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 text-sm;
+  }
+  
+  .dark .form-input {
+    @apply bg-slate-800 border-slate-700 focus:ring-primary/30 focus:border-primary text-slate-100;
+  }
+  
+  /* Action buttons */
+  .btn-primary {
+    @apply px-4 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm shadow-primary/20 active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply px-4 py-2.5 bg-secondary hover:bg-secondary-hover text-white rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm shadow-secondary/20 active:scale-95;
+  }
+
+  .btn-accent {
+    @apply px-4 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-sm shadow-accent/20 active:scale-95;
+  }
+
+  .btn-outline {
+    @apply px-4 py-2.5 border border-slate-200 bg-transparent hover:bg-slate-50 text-slate-600 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 active:scale-95;
+  }
+}
+
+/* Custom Scrollbar for premium feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-slate-700;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-300;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-600;
+}
+
+/* Shimmer animation for loading states */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
